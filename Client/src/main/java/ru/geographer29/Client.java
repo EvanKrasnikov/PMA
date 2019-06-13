@@ -1,12 +1,17 @@
 package ru.geographer29;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
+import ru.geographer29.entities.Message;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Scanner;
 
 public class Client {
@@ -17,6 +22,10 @@ public class Client {
     private Socket socket;
     private ObjectInputStream in;
     private ObjectOutputStream out;
+
+    private String target = getClass().getName();
+    private final DateFormat dateFormat = new SimpleDateFormat(("yyyy-MM-dd HH:mm"));
+
 
     static {
         BasicConfigurator.configure();
@@ -33,20 +42,24 @@ public class Client {
 
             Scanner scanner = new Scanner(System.in);
             String msgSend = "";
-            String msgReceive = "";
+            String json = "";
 
 
             do {
                 try {
-                    msgReceive = (String)in.readObject();
+                    json = (String)in.readObject();
 
-                    if (!msgReceive.equals("")) {
-                        System.out.println("Server> " + msgReceive);
+                    ObjectMapper mapper = new ObjectMapper();
+                    mapper.setDateFormat(dateFormat);
+                    Message message = mapper.readValue(json, Message.class);
+
+                    if (!message.getBody().equals("")) {
+                        System.out.println(message.getSource() + "> " + message.getBody());
                     }
 
                     System.out.println("Enter a message: ");
                     msgSend = scanner.nextLine();
-                    sendMsg(msgSend);
+                    sendMsg(msgSend, target);
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                     logger.error("Format has not recognized");
@@ -71,11 +84,21 @@ public class Client {
         }
     }
 
-    private void sendMsg(Object msg) {
+    private void sendMsg(String body, String target) {
         try {
-            out.writeObject(msg);
+            Message message = new Message();
+            message.setBody(body);
+            message.setTarget(target);
+            message.setSource(getClass().getSimpleName());
+            message.setTimestamp(new Date());
+
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setDateFormat(dateFormat);
+            String json = mapper.writeValueAsString(message);
+
+            out.writeObject(json);
             out.flush();
-            System.out.println("Client> " + msg);
+            System.out.println(getClass().getSimpleName() + "> " + body);
         } catch (IOException e) {
             e.printStackTrace();
             logger.error("Failed to send message");
