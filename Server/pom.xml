@@ -45,13 +45,28 @@
                                 <goal>copy-dependencies</goal>
                             </goals>
                             <configuration>
-                                <outputDirectory>${project.basedir}/target/lib</outputDirectory>
+                                <outputDirectory>${project.build.directory}/classes/lib</outputDirectory>
                                 <overWriteReleases>false</overWriteReleases>
                                 <overWriteSnapshots>false</overWriteSnapshots>
                                 <overWriteIfNewer>true</overWriteIfNewer>
                             </configuration>
                         </execution>
                     </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <configuration>
+                        <archive>
+                            <manifest>
+                                <addClasspath>true</addClasspath>
+                            </manifest>
+                            <manifestEntries>
+                                <Class-Path>lib/</Class-Path>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
