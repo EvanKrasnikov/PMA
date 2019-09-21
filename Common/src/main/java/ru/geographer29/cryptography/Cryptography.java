@@ -4,8 +4,8 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 
 import javax.crypto.*;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import javax.crypto.spec.IvParameterSpec;
+import java.security.*;
 import java.util.Base64;
 
 public class Cryptography {
@@ -22,11 +22,13 @@ public class Cryptography {
 
     public static Cryptography initialize(SecretKey secretKey) {
         try {
-            eCipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
-            eCipher.init(Cipher.ENCRYPT_MODE, secretKey);
-            dCipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
-            dCipher.init(Cipher.DECRYPT_MODE, secretKey);
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
+            //Security.addProvider()
+            IvParameterSpec iv = new IvParameterSpec("NOTARANDOMSTRING".getBytes());
+            eCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            eCipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
+            dCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            dCipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException e) {
             e.printStackTrace();
         }
 
