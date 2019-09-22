@@ -13,7 +13,6 @@ import ru.geographer29.responses.Type;
 import sun.security.rsa.RSAPublicKeyImpl;
 
 import javax.crypto.*;
-import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -189,7 +188,6 @@ public class Client {
              * Setting up cryptography for secret key decryption
              */
 
-            //IvParameterSpec iv = new IvParameterSpec(new byte[]{0,0,0,0,0,0,0,0});
             Cipher cipher = null;
             try {
                 cipher = Cipher.getInstance("RSA");
@@ -211,14 +209,10 @@ public class Client {
                     skResponse = gson.fromJson(json, skToken.getType());
                     String encoredSecretKey = skResponse.getContent();
                     byte[] decodedSecretKey = Base64.getDecoder().decode(encoredSecretKey);
-                    //byte[] decryptedSecretKey = cipher.doFinal(decodedSecretKey);
-                    //secretKey = new SecretKeySpec(decodedSecretKey, 0, decryptedSecretKey.length, "AES");
-                    secretKey = new SecretKeySpec(decodedSecretKey, 0, decodedSecretKey.length, "AES");
-                    System.out.println("secret key");
-                    logger.debug("Received json = " + json);
-                    logger.debug("Secret key = " + secretKey);
-                    logger.debug("Secret key = " + secretKey.toString());
+                    byte[] decryptedSecretKey = cipher.doFinal(decodedSecretKey);
+                    secretKey = new SecretKeySpec(decryptedSecretKey, 0, decryptedSecretKey.length, "AES");
 
+                    logger.debug("Received json = " + json);
                     json = gson.toJson(ResponseFactory.createSecretKeyAcceptResponse());
                     out.writeObject(json);
 
@@ -232,6 +226,9 @@ public class Client {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             logger.error("Format has not recognized");
+        } catch (IllegalBlockSizeException | BadPaddingException e) {
+            e.printStackTrace();
+            logger.error("Can't decrypt public key");
         }
 
         Cryptography.initialize(secretKey);

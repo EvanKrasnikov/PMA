@@ -10,10 +10,8 @@ import ru.geographer29.responses.Message;
 import ru.geographer29.responses.Response;
 import ru.geographer29.responses.ResponseFactory;
 import ru.geographer29.responses.Type;
-import sun.security.rsa.RSAPublicKeyImpl;
 
 import javax.crypto.*;
-import javax.crypto.spec.IvParameterSpec;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -190,7 +188,6 @@ public class Server {
              * Initialize RSA for sending secret key
              */
 
-            //IvParameterSpec iv = new IvParameterSpec(new byte[]{0,0,0,0,0,0,0,0});
             Cipher cipher = Cipher.getInstance("RSA");
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
 
@@ -201,13 +198,13 @@ public class Server {
             logger.debug("Secret key = " + secretKey);
             logger.debug("Secret key = " + secretKey.toString());
             byte[] encryptedSecretKey = cipher.doFinal(secretKey.getEncoded());
-            //encodedSecretKey = Base64.getEncoder().encodeToString(encryptedSecretKey);
-            encodedSecretKey = Base64.getEncoder().encodeToString(secretKey.getEncoded());
+            encodedSecretKey = Base64.getEncoder().encodeToString(encryptedSecretKey);
             json = gson.toJson(ResponseFactory.createSecretKeyResponse(encodedSecretKey));
-            logger.debug("Sending encoded secret key " + json);
-            out.writeObject(json);
 
             for(;;) {
+                logger.debug("Sending encoded secret key " + json);
+                out.writeObject(json);
+
                 json = (String)in.readObject();
                 oResponse = new Gson().fromJson(json, oToken.getType());
 
