@@ -3,8 +3,8 @@ package ru.geographer29;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
+import org.apache.log4j.xml.DOMConfigurator;
 import ru.geographer29.cryptography.Cryptography;
 import ru.geographer29.responses.Message;
 import ru.geographer29.responses.Response;
@@ -12,6 +12,7 @@ import ru.geographer29.responses.ResponseFactory;
 import ru.geographer29.responses.Type;
 
 import javax.crypto.*;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -55,7 +56,7 @@ public class Server {
     private TypeToken<Response<String>> enToken = new TypeToken<Response<String>>(){};
 
     static {
-        BasicConfigurator.configure();
+        DOMConfigurator.configure(System.getProperty("user.dir") + File.separator + "log4j.xml");
     }
 
     public void run() {

@@ -1,11 +1,14 @@
 package ru.geographer29.cryptography;
 
-import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
+import org.apache.log4j.xml.DOMConfigurator;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
-import java.security.*;
+import java.io.File;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 public class Cryptography {
@@ -17,12 +20,11 @@ public class Cryptography {
     private Cryptography(){}
 
     static {
-        BasicConfigurator.configure();
+        DOMConfigurator.configure(System.getProperty("user.dir") + File.separator + "log4j.xml");
     }
 
     public static Cryptography initialize(SecretKey secretKey) {
         try {
-            //Security.addProvider()
             IvParameterSpec iv = new IvParameterSpec("NOTARANDOMSTRING".getBytes());
             eCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             eCipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
