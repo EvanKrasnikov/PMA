@@ -11,7 +11,7 @@ public class AES {
         this.mode = mode;
     }
 
-    public String encrypt(String line, String iv, String key) {
+    public String encrypt16Bytes(String line, String iv, String key) {
         int numRounds = 10 + (((key.length() * 4 - 128) / 32));
         int[][] initVector = new int[4][4];
         int[][] state = new int[4][4];
@@ -62,7 +62,30 @@ public class AES {
         return matrixToString(state);
     }
 
-    public String decrypt(String line, String iv, String key) {
+    public String encrypt(String line, String iv, String key){
+        String result;
+
+        if (line.length() > 32){
+            StringBuilder sb = new StringBuilder();
+            int begin = 0;
+            int end = 32;
+
+            while (end <= line.length()){
+                String nextChunk = line.substring(begin, end);
+                String encrypted = encrypt16Bytes(nextChunk, iv, key);
+                sb.append(encrypted);
+                begin += 32;
+                end += 32;
+            }
+
+            result = sb.toString();
+        } else {
+            result = encrypt16Bytes(line, iv, key);
+        }
+        return result;
+    }
+
+    public String decrypt16Bytes(String line, String iv, String key) {
         int numRounds = 10 + (((key.length() * 4 - 128) / 32));
         int[][] state = new int[4][4];
         int[][] initVector = new int[4][4];
@@ -109,6 +132,28 @@ public class AES {
         return matrixToString(state);
     }
 
+    public String decrypt(String line, String iv, String key) {
+        String result;
+
+        if (line.length() > 32){
+            StringBuilder sb = new StringBuilder();
+            int begin = 0;
+            int end = 32;
+
+            while (end <= line.length()){
+                String nextChunk = line.substring(begin, end);
+                String decrypted = decrypt16Bytes(nextChunk, iv, key);
+                sb.append(decrypted);
+                begin += 32;
+                end += 32;
+            }
+
+            result = sb.toString();
+        } else {
+            result = encrypt16Bytes(line, iv, key);
+        }
+        return result;
+    }
 
     //Helper method which executes a deep copy of a 2D array. (dest,src)
     private void deepCopy2DArray(int[][] destination, int[][] source) {
