@@ -1,5 +1,7 @@
 package ru.geographer29.cryptography;
 
+import java.util.Random;
+
 import static ru.geographer29.cryptography.LookupTables.*;
 
 public class AES {
@@ -401,4 +403,16 @@ public class AES {
         }
         return t;
     }
+
+    // default - 128 bits
+    public static String generateSecretKey(int keyLength) {
+        keyLength /= 4;
+        Random r = new Random();
+        StringBuilder sb = new StringBuilder();
+        while(sb.length() < keyLength){
+            sb.append(Integer.toHexString(r.nextInt()));
+        }
+        return sb.toString().trim().toUpperCase();
+    }
+
 }
