@@ -1,48 +1,42 @@
 package ru.geographer29.responses;
 
-import sun.security.rsa.RSAPublicKeyImpl;
-
-import javax.crypto.SecretKey;
-import java.security.PublicKey;
-//import com.sun.crypto.provider.Des;
-
 public class ResponseFactory {
 
-    public static Response<Message> createMessageResponse(Object content) {
-        return new Response.Builder<Message>()
+    public static Response createMessageResponse(String content) {
+        return new Response.Builder()
                 .setType(Type.MESSAGE)
                 .setContent(content)
                 .build();
     }
 
-    public static Response<RSAPublicKeyImpl> createPublicKeyResponse(Object content) {
-        return new Response.Builder<RSAPublicKeyImpl>()
+    public static Response createPublicKeyResponse(String content) {
+        return new Response.Builder()
                 .setType(Type.PUBLIC_KEY)
                 .setContent(content)
                 .build();
     }
 
-    public static Response<Object> createPublicKeyAcceptResponse() {
-        return new Response.Builder<Object>()
+    public static Response createPublicKeyAcceptResponse() {
+        return new Response.Builder()
                 .setType(Type.PUBLIC_KEY_ACCEPT)
                 .build();
     }
 
-    public static Response<String> createSecretKeyResponse(Object content) {
-        return new Response.Builder<String>()
+    public static Response createSecretKeyResponse(String content) {
+        return new Response.Builder()
                 .setType(Type.SECRET_KEY)
                 .setContent(content)
                 .build();
     }
 
-    public static Response<Object> createSecretKeyAcceptResponse() {
-        return new Response.Builder<Object>()
+    public static Response createSecretKeyAcceptResponse() {
+        return new Response.Builder()
                 .setType(Type.SECRET_KEY_ACCEPT)
                 .build();
     }
 
-    public static Response<String> createEncryptedMessageResponse(Object content){
-        return new Response.Builder<String>()
+    public static Response createEncryptedMessageResponse(String content){
+        return new Response.Builder()
                 .setType(Type.ENCRYPTED)
                 .setContent(content)
                 .build();

@@ -1,102 +1,27 @@
 package ru.geographer29;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import org.apache.log4j.Logger;
-import org.apache.log4j.xml.DOMConfigurator;
 import ru.geographer29.cryptography.Cryptography;
 import ru.geographer29.responses.Message;
 import ru.geographer29.responses.Response;
-import ru.geographer29.responses.ResponseFactory;
 import ru.geographer29.responses.Type;
 
 import javax.crypto.*;
-import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.security.*;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
-import java.util.concurrent.TimeUnit;
 
-public class Server {
+import static ru.geographer29.responses.ResponseFactory.*;
 
-    private final static Logger logger = Logger.getLogger(Server.class);
-    private final static int PORT = 8080;
+public class VanillaCryptographyServer extends AbstractServer {
 
-    private Socket socket;
-    private ServerSocket serverSocket;
+    private final static Logger logger = Logger.getLogger(VanillaCryptographyServer.class);
 
-    private ObjectOutputStream out;
-    private ObjectInputStream in;
-
-    private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm").create();
-
-    private PublicKey publicKey;
-    private PrivateKey privateKey;
-    private SecretKey secretKey;
-
-    private String msgSend = "";
-    private String json = "";
-    private Message message = null;
-
-    private Response<Object> oResponse;
-    private Response<String> pkResponse;
-    private Response<String> scResponse;
-    private Response<Message> mResponse;
-    private Response<String> enResponse;
-    private TypeToken<Response<Object>> oToken = new TypeToken<Response<Object>>(){};
-    private TypeToken<Response<String>> pkToken = new TypeToken<Response<String>>(){};
-    private TypeToken<Response<Message>> mToken = new TypeToken<Response<Message>>(){};
-    private TypeToken<Response<String>> enToken = new TypeToken<Response<String>>(){};
-
-    static {
-        DOMConfigurator.configure(System.getProperty("user.dir") + File.separator + "log4j.xml");
-    }
-
-    public void run() {
-        try {
-            serverSocket = new ServerSocket(PORT);
-
-            logger.info("Waiting for connection ");
-            socket = serverSocket.accept();
-
-            out = new ObjectOutputStream(socket.getOutputStream());
-            out.flush();
-            in = new ObjectInputStream(socket.getInputStream());
-
-            logger.info("Client connected " + socket.getInetAddress().getHostAddress());
-
-            generateKeys();
-            initCryptography();
-            mainLoop();
-
-            logger.info("Client disconnected " + socket.getInetAddress().getHostAddress());
-
-            TimeUnit.SECONDS.sleep(1);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e){
-            e.printStackTrace();
-        }finally {
-            try {
-                in.close();
-                out.close();
-                socket.close();
-                serverSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-                logger.error("Unable to close streams and sockets");
-            }
-        }
-    }
-
-    private void mainLoop() {
+    void mainLoop() {
         logger.debug("Starting main loop");
 
         for(;;) {
@@ -107,17 +32,14 @@ public class Server {
                 logger.error("Unable to receive object");
             }
 
-            oResponse = gson.fromJson(json, oToken.getType());
-
-            if (oResponse.getType() == Type.ENCRYPTED) {
-                enResponse = gson.fromJson(json, enToken.getType());
+            response = gson.fromJson(json, Response.class);
+            if (response.getType() == Type.ENCRYPTED) {
+                response = gson.fromJson(json, Response.class);
                 logger.debug("Received json = " + json);
-                json = Cryptography.decodeAndDecrypt(enResponse.getContent());
+                json = Cryptography.decodeAndDecrypt(response.getContent());
                 logger.debug("Decrypted json = " + json);
 
-                mResponse = gson.fromJson(json, mToken.getType());
-                message = mResponse.getContent();
-
+                message = gson.fromJson(response.getContent(), Message.class);
                 if (message.getBody().equals("/quit")) {
                     break;
                 }
@@ -130,12 +52,13 @@ public class Server {
                         .setBody(msgSend)
                         .setSource("Server")
                         .build();
-                json = gson.toJson(ResponseFactory.createMessageResponse(message));
+                json = gson.toJson(message);
+                json = gson.toJson(createMessageResponse(json));
                 logger.debug("Sending message = " + json);
                 msgSend = Cryptography.encryptAndEncode(json);
 
-                enResponse = ResponseFactory.createEncryptedMessageResponse(msgSend);
-                json = gson.toJson(enResponse);
+                response = createEncryptedMessageResponse(msgSend);
+                json = gson.toJson(response);
 
                 try {
                     out.writeObject(json);
@@ -147,7 +70,7 @@ public class Server {
         }
     }
 
-    private void generateKeys() {
+    void generateKeys() {
         try {
             KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
             keyGenerator.init(128);
@@ -158,7 +81,7 @@ public class Server {
         }
     }
 
-    private void initCryptography() {
+    void initCryptography() {
         try {
 
             /**
@@ -167,17 +90,14 @@ public class Server {
 
             for(;;) {
                 json = (String)in.readObject();
-                oResponse = new Gson().fromJson(json, oToken.getType());
-
-                if (oResponse.getType() == Type.PUBLIC_KEY) {
-                    pkResponse = gson.fromJson(json, pkToken.getType());
-
-                    X509EncodedKeySpec keySpec = new X509EncodedKeySpec(Base64.getDecoder().decode(pkResponse.getContent().getBytes()));
+                response = gson.fromJson(json, Response.class);
+                if (response.getType() == Type.PUBLIC_KEY) {
+                    X509EncodedKeySpec keySpec = new X509EncodedKeySpec(Base64.getDecoder().decode(response.getContent().getBytes()));
                     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
                     publicKey = keyFactory.generatePublic(keySpec);
                     logger.debug("Public key was accepted " + publicKey);
 
-                    json = gson.toJson(ResponseFactory.createPublicKeyAcceptResponse());
+                    json = gson.toJson(createPublicKeyAcceptResponse());
                     out.writeObject(json);
                     logger.debug("Sending accepting confirmation " + json);
                     break;
@@ -200,16 +120,14 @@ public class Server {
             logger.debug("Secret key = " + secretKey.toString());
             byte[] encryptedSecretKey = cipher.doFinal(secretKey.getEncoded());
             encodedSecretKey = Base64.getEncoder().encodeToString(encryptedSecretKey);
-            json = gson.toJson(ResponseFactory.createSecretKeyResponse(encodedSecretKey));
+            json = gson.toJson(createSecretKeyResponse(encodedSecretKey));
 
             for(;;) {
                 logger.debug("Sending encoded secret key " + json);
                 out.writeObject(json);
-
                 json = (String)in.readObject();
-                oResponse = new Gson().fromJson(json, oToken.getType());
-
-                if (oResponse.getType() == Type.SECRET_KEY_ACCEPT) {
+                response = gson.fromJson(json, Response.class);
+                if (response.getType() == Type.SECRET_KEY_ACCEPT) {
                     logger.debug("Secret key was accepted");
                     break;
                 }

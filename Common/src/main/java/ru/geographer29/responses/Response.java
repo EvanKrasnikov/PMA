@@ -1,22 +1,11 @@
 package ru.geographer29.responses;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+public class Response {
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class Response<T> {
-
-    @JsonProperty("type")
     private final Type type;
-    @JsonProperty("content")
-    private final T content;
+    private final String content;
 
-    @JsonCreator
-    private Response(
-            @JsonProperty("type") Type type,
-            @JsonProperty("content") T content
-    ) {
+    private Response(Type type, String content) {
         this.type = type;
         this.content = content;
     }
@@ -25,28 +14,27 @@ public class Response<T> {
         return type;
     }
 
-    public T getContent() {
+    public String getContent() {
         return content;
     }
 
-    static class Builder<T>{
+    static class Builder{
 
         private Type type;
-        private T content;
+        private String content;
 
-        public Builder<T> setType(Type type){
+        public Builder setType(Type type){
             this.type = type;
             return this;
         }
 
-        @SuppressWarnings("unchecked")
-        public Builder<T> setContent(Object o){
-            this.content = (T)o;
+        public Builder setContent(String content){
+            this.content = content;
             return this;
         }
 
-        public Response<T> build(){
-            return new Response<>(type, content);
+        public Response build(){
+            return new Response(type, content);
         }
 
     }
