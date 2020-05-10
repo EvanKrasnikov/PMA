@@ -7,7 +7,7 @@ import java.io.File;
 public class App {
 
     static {
-        DOMConfigurator.configure(System.getProperty("user.dir") + File.separator + "log4j.xml");
+        DOMConfigurator.configure(System.getProperty("user.dir") + File.separator + "log4j_srv.xml");
     }
 
     public static void main( String[] args ) {
