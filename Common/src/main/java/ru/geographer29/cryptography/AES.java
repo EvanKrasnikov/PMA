@@ -74,13 +74,12 @@ public class AES {
         System.out.println("After = " + line);
         int len = line.length();
 
+        // Adding padding zeroes
         if (len % 32 != 0) {
             StringBuilder sb = new StringBuilder();
-
             for (int i = 0; i < 32 - (len % 32); i++) {
                 sb.append('0');
             }
-
             line += sb.toString();
             System.out.println("Msg len = " + len);
             System.out.println("Add len = " + (32 - (len % 32)));
@@ -181,7 +180,17 @@ public class AES {
         } else {
             result = encrypt16Bytes(line, iv, key);
         }
-        return new String(Util.hexToBytes(result));
+
+        //remove padding zeroes
+        result = new String(Util.hexToBytes(result));
+        for(int i = result.length()-1; i>0; i--){
+            if (result.charAt(i) == '}'){
+                result = result.substring(0, i+1);
+                break;
+            }
+        }
+
+        return result;
     }
 
     //Helper method which executes a deep copy of a 2D array. (dest,src)

@@ -37,11 +37,12 @@ public class CustomCryptographyClient extends AbstractClient {
                     .build();
             json = gson.toJson(message);
             json = gson.toJson(createMessageResponse(json));
-            logger.debug("Sending original json = " + json);
 
             String encrypted = aes.encrypt(json, iv, secretKey);
             String encoded = Base64.getEncoder().encodeToString(encrypted.getBytes());
             json = gson.toJson(createEncryptedResponse(encoded));
+
+            logger.debug("Sending original json = " + json);
             logger.debug("Sending encrypted message = " + encrypted);
             logger.debug("Sending encoded message = " + encoded);
             logger.debug("Sending encrypted message json = " + json);
@@ -63,18 +64,24 @@ public class CustomCryptographyClient extends AbstractClient {
                 //logger.error("Unable to receive object");
             }
 
-            logger.debug("Received json = " + json);
-
             response = gson.fromJson(json, Response.class);
             if (response.getType() == Type.ENCRYPTED){
-                byte[] decoded = Base64.getDecoder().decode(response.getContent());
-                String decrypted = aes.decrypt(new String(decoded), iv, secretKey);
-                logger.debug("Decrypted json = " + json);
+                String decoded = new String(Base64.getDecoder().decode(response.getContent()));
+                String decrypted = aes.decrypt(decoded, iv, secretKey);
                 message = gson.fromJson(decrypted, Message.class);
-                logger.debug("Message = " + message.getBody() );
 
-                if (message.getBody() != null) {
-                    System.out.println(message.getSource() + "> " + message.getBody());
+                logger.debug("Receiving encrypted json = " + json);
+                logger.debug("Receiving encoded message = " + response.getContent());
+                logger.debug("Receiving encrypted message = " + decoded);
+                logger.debug("Receiving original message json = " + decrypted);
+
+                response = gson.fromJson(decrypted, Response.class);
+                if (response.getType() == Type.MESSAGE) {
+                    message = gson.fromJson(response.getContent(), Message.class);
+
+                    if (message.getBody() != null) {
+                        System.out.println(message.getSource() + "> " + message.getBody());
+                    }
                 }
             }
         }

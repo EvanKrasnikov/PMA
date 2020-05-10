@@ -33,44 +33,52 @@ public class CustomCryptographyServer extends AbstractServer {
                 //logger.error("Unable to receive object");
             }
 
-            logger.debug("Receiving encrypted message json = " + json);
-
             response = gson.fromJson(json, Response.class);
             if (response.getType() == Type.ENCRYPTED) {
-                //response = gson.fromJson(response.getContent(), Response.class);
                 String decoded = new String(Base64.getDecoder().decode(response.getContent()));
                 String decrypted = aes.decrypt(decoded, iv, secretKey);
+
+                logger.debug("Receiving encrypted json = " + json);
                 logger.debug("Receiving encoded message = " + response.getContent());
                 logger.debug("Receiving encrypted message = " + decoded);
                 logger.debug("Receiving original message json = " + decrypted);
 
-                //message = gson.fromJson(decrypted, Message.class);
-                if (message.getBody().equals("/quit")) {
-                    break;
-                }
+                response = gson.fromJson(decrypted, Response.class);
+                if (response.getType() == Type.MESSAGE){
+                    message = gson.fromJson(response.getContent(), Message.class);
 
-                logger.info(message.getSource() + "> " + message.getBody());
-                System.out.println(message.getSource() + "> " + message.getBody());
+                    if (message.getBody().equals("/quit")) {
+                        break;
+                    }
 
-                msgSend = "Echo + " + message.getBody();
-                message = new Message.Builder()
-                        .setBody(msgSend)
-                        .setSource("Server")
-                        .build();
-                json = gson.toJson(message);
-                json = gson.toJson(createMessageResponse(json));
-                logger.debug("Sending message = " + json);
-                String encrypted = aes.encrypt(json, iv, secretKey);
-                String encoded = Base64.getEncoder().encodeToString(encrypted.getBytes());
+                    logger.info(message.getSource() + "> " + message.getBody());
+                    System.out.println(message.getSource() + "> " + message.getBody());
 
-                response = createEncryptedResponse(encoded);
-                json = gson.toJson(response);
+                    msgSend = "Echo + " + message.getBody();
+                    message = new Message.Builder()
+                            .setBody(msgSend)
+                            .setSource("Server")
+                            .build();
+                    json = gson.toJson(message);
+                    json = gson.toJson(createMessageResponse(json));
 
-                try {
-                    out.writeObject(json);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    //logger.error("Unable to send message");
+                    String encrypted = aes.encrypt(json, iv, secretKey);
+                    String encoded = Base64.getEncoder().encodeToString(encrypted.getBytes());
+                    response = createEncryptedResponse(encoded);
+
+                    logger.debug("Sending original json = " + json);
+                    logger.debug("Sending encrypted message = " + encrypted);
+                    logger.debug("Sending encoded message = " + encoded);
+                    logger.debug("Sending encrypted message json = " + json);
+
+                    json = gson.toJson(response);
+
+                    try {
+                        out.writeObject(json);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        //logger.error("Unable to send message");
+                    }
                 }
             }
         }
