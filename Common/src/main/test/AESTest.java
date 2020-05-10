@@ -12,10 +12,10 @@ public class AESTest {
         AES aes = new AES(AES.Mode.ECB);
         System.out.println("Plain message = " + plain);
 
-        String encrypted = aes.encrypt16Bytes(plain, iv, secretKey);
+        String encrypted = aes.encrypt(plain, iv, secretKey);
         System.out.println("Encrypted message = " + encrypted);
 
-        String decrypted = aes.decrypt16Bytes(encrypted, iv, secretKey);
+        String decrypted = aes.decrypt(encrypted, iv, secretKey);
         System.out.println("Decrypted message = " + decrypted);
 
         Assert.assertEquals(plain, decrypted);

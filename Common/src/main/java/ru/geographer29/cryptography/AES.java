@@ -14,59 +14,12 @@ public class AES {
         this.mode = mode;
     }
 
-    public String encrypt16Bytes(String line, String iv, String key) {
+    public String encrypt(String line, String iv, String key) {
+        StringBuilder sb = new StringBuilder();
         int numRounds = 10 + (((key.length() * 4 - 128) / 32));
         int[][] initVector = new int[4][4];
         int[][] state = new int[4][4];
         int[][] keyMatrix = keySchedule(key);
-
-        if(mode == Mode.CBC) {
-            for (int i = 0; i < 4; i++) {
-                for (int j = 0; j < 4; j++) {
-                    initVector[j][i] = Integer.parseInt(iv.substring((8 * i) + (2 * j), (8 * i) + (2 * j + 2)), 16);
-                }
-            }
-        }
-
-        //If line is valid (i.e. contains valid hex characters, encrpyt. Otherwise, skip line.
-        if (line.length() < 32) {
-            line = String.format("%032x", Integer.parseInt(line, 16));
-        }
-
-        //Parses line into a matrix
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 4; j++) {
-                state[j][i] = Integer.parseInt(line.substring((8 * i) + (2 * j), (8 * i) + (2 * j + 2)), 16);
-            }
-        }
-
-        if (mode == Mode.CBC) {
-            addRoundKey(state, initVector);
-        }
-
-        //Starts the addRoundKey with the first part of Key Expansion
-        addRoundKey(state, subKey(keyMatrix, 0));
-
-        for (int i = 1; i < numRounds; i++) {
-            subBytes(state); //implements the Sub-Bytes subroutine.
-            shiftRows(state); //implements Shift-Rows subroutine.
-            mixColumns(state);
-            addRoundKey(state, subKey(keyMatrix, i));
-        }
-        subBytes(state); //implements the Sub-Bytes subroutine.
-        shiftRows(state); //implements Shift-Rows subroutine.
-        addRoundKey(state, subKey(keyMatrix, numRounds));
-
-        if (mode == Mode.CBC) {
-            initVector = state;
-        }
-
-        // return matrixToString(state) + newLine;
-        return matrixToString(state);
-    }
-
-    public String encrypt(String line, String iv, String key){
-        StringBuilder sb = new StringBuilder();;
         int blockSize = 32;
         int begin = 0;
         int end = blockSize;
@@ -74,10 +27,52 @@ public class AES {
         line = Util.bytesToHex(line.getBytes());
         line = addPadding(line, blockSize);
 
+        if (mode == Mode.CBC) {
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    initVector[j][i] = Integer.parseInt(iv.substring((8 * i) + (2 * j), (8 * i) + (2 * j + 2)), 16);
+                }
+            }
+        }
+
         while (end <= line.length()){
-            String nextChunk = line.substring(begin, end);
-            String encrypted = encrypt16Bytes(nextChunk, iv, key);
-            sb.append(encrypted);
+            String chunk = line.substring(begin, end);
+
+            //If line is valid (i.e. contains valid hex characters, encrpyt. Otherwise, skip line.
+            if (chunk.length() < 32) {
+                chunk = String.format("%032x", Integer.parseInt(chunk, 16));
+            }
+
+            //Parses line into a matrix
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    state[j][i] = Integer.parseInt(chunk.substring((8 * i) + (2 * j), (8 * i) + (2 * j + 2)), 16);
+                }
+            }
+
+            if (mode == Mode.CBC) {
+                addRoundKey(state, initVector);
+            }
+
+            //Starts the addRoundKey with the first part of Key Expansion
+            addRoundKey(state, subKey(keyMatrix, 0));
+
+            for (int i = 1; i < numRounds; i++) {
+                subBytes(state); //implements the Sub-Bytes subroutine.
+                shiftRows(state); //implements Shift-Rows subroutine.
+                mixColumns(state);
+                addRoundKey(state, subKey(keyMatrix, i));
+            }
+
+            subBytes(state); //implements the Sub-Bytes subroutine.
+            shiftRows(state); //implements Shift-Rows subroutine.
+            addRoundKey(state, subKey(keyMatrix, numRounds));
+
+            if (mode == Mode.CBC) {
+                initVector = state;
+            }
+
+            sb.append(matrixToString(state));
             begin += blockSize;
             end += blockSize;
         }
@@ -85,12 +80,16 @@ public class AES {
         return sb.toString();
     }
 
-    public String decrypt16Bytes(String line, String iv, String key) {
+    public String decrypt(String line, String iv, String key) {
+        StringBuilder sb = new StringBuilder();
         int numRounds = 10 + (((key.length() * 4 - 128) / 32));
         int[][] state = new int[4][4];
         int[][] initVector = new int[4][4];
         int[][] nextVector = new int[4][4];
         int[][] keyMatrix = keySchedule(key);
+        int blockSize = 32;
+        int begin = 0;
+        int end = blockSize;
 
         //Parse Initialization Vector
         if(mode == Mode.CBC) {
@@ -101,47 +100,38 @@ public class AES {
             }
         }
 
-        //Parses line into a matrix
-        for (int i = 0; i < state.length; i++) {
-            for (int j = 0; j < state[0].length; j++) {
-                state[j][i] = Integer.parseInt(line.substring((8 * i) + (2 * j), (8 * i) + (2 * j + 2)), 16);
+        while (end <= line.length()) {
+            String chunk = line.substring(begin, end);
+
+            //Parses line into a matrix
+            for (int i = 0; i < state.length; i++) {
+                for (int j = 0; j < state[0].length; j++) {
+                    state[j][i] = Integer.parseInt(chunk.substring((8 * i) + (2 * j), (8 * i) + (2 * j + 2)), 16);
+                }
             }
-        }
 
-        if(mode == Mode.CBC) {
-            deepCopy2DArray(nextVector,state);
-        }
+            if(mode == Mode.CBC) {
+                deepCopy2DArray(nextVector,state);
+            }
 
-        addRoundKey(state, subKey(keyMatrix, numRounds));
-        for (int i = numRounds - 1; i > 0; i--) {
+            addRoundKey(state, subKey(keyMatrix, numRounds));
+            for (int i = numRounds - 1; i > 0; i--) {
+                shiftRowsInv(state);
+                subBytesInv(state);
+                addRoundKey(state, subKey(keyMatrix, i));
+                mixColumnsInv(state);
+            }
+
             shiftRowsInv(state);
             subBytesInv(state);
-            addRoundKey(state, subKey(keyMatrix, i));
-            mixColumnsInv(state);
-        }
+            addRoundKey(state, subKey(keyMatrix, 0));
 
-        shiftRowsInv(state);
-        subBytesInv(state);
-        addRoundKey(state, subKey(keyMatrix, 0));
+            if(mode == Mode.CBC) {
+                addRoundKey(state, initVector);
+                deepCopy2DArray(initVector,nextVector);
+            }
 
-        if(mode == Mode.CBC) {
-            addRoundKey(state, initVector);
-            deepCopy2DArray(initVector,nextVector);
-        }
-
-        return matrixToString(state);
-    }
-
-    public String decrypt(String line, String iv, String key) {
-        StringBuilder sb = new StringBuilder();
-        int blockSize = 32;
-        int begin = 0;
-        int end = blockSize;
-
-        while (end <= line.length()){
-            String nextChunk = line.substring(begin, end);
-            String decrypted = decrypt16Bytes(nextChunk, iv, key);
-            sb.append(decrypted);
+            sb.append(matrixToString(state));
             begin += blockSize;
             end += blockSize;
         }
