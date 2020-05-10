@@ -66,51 +66,23 @@ public class AES {
     }
 
     public String encrypt(String line, String iv, String key){
-        String result;
+        StringBuilder sb = new StringBuilder();;
+        int blockSize = 32;
+        int begin = 0;
+        int end = blockSize;
 
-
-        System.out.println("Before = " + line);
         line = Util.bytesToHex(line.getBytes());
-        System.out.println("After = " + line);
-        int len = line.length();
+        line = addPadding(line, blockSize);
 
-        // Adding padding zeroes
-        if (len % 32 != 0) {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < 32 - (len % 32); i++) {
-                sb.append('0');
-            }
-            line += sb.toString();
-            System.out.println("Msg len = " + len);
-            System.out.println("Add len = " + (32 - (len % 32)));
-            System.out.println("Combined = " + line);
-            System.out.println("Msg len = " + line.length());
+        while (end <= line.length()){
+            String nextChunk = line.substring(begin, end);
+            String encrypted = encrypt16Bytes(nextChunk, iv, key);
+            sb.append(encrypted);
+            begin += blockSize;
+            end += blockSize;
         }
 
-        if (line.length() > 32){
-            StringBuilder sb = new StringBuilder();
-            int begin = 0;
-            int end = 32;
-
-            while (end <= line.length()){
-                if (end > line.length()){
-                    end = line.length();
-                }
-                String nextChunk = line.substring(begin, end);
-                System.out.println("Chunk = " + nextChunk);
-                System.out.println("Chunk len = " + end);
-                String encrypted = encrypt16Bytes(nextChunk, iv, key);
-                sb.append(encrypted);
-                begin += 32;
-                end += 32;
-            }
-
-            result = sb.toString();
-        } else {
-            result = encrypt16Bytes(line, iv, key);
-        }
-        System.out.println(result);
-        return result;
+        return sb.toString();
     }
 
     public String decrypt16Bytes(String line, String iv, String key) {
@@ -161,36 +133,20 @@ public class AES {
     }
 
     public String decrypt(String line, String iv, String key) {
-        String result;
+        StringBuilder sb = new StringBuilder();
+        int blockSize = 32;
+        int begin = 0;
+        int end = blockSize;
 
-        if (line.length() > 32){
-            StringBuilder sb = new StringBuilder();
-            int begin = 0;
-            int end = 32;
-
-            while (end <= line.length()){
-                String nextChunk = line.substring(begin, end);
-                String decrypted = decrypt16Bytes(nextChunk, iv, key);
-                sb.append(decrypted);
-                begin += 32;
-                end += 32;
-            }
-
-            result = sb.toString();
-        } else {
-            result = encrypt16Bytes(line, iv, key);
+        while (end <= line.length()){
+            String nextChunk = line.substring(begin, end);
+            String decrypted = decrypt16Bytes(nextChunk, iv, key);
+            sb.append(decrypted);
+            begin += blockSize;
+            end += blockSize;
         }
 
-        //remove padding zeroes
-        result = new String(Util.hexToBytes(result));
-        for(int i = result.length()-1; i>0; i--){
-            if (result.charAt(i) == '}'){
-                result = result.substring(0, i+1);
-                break;
-            }
-        }
-
-        return result;
+        return removePadding(sb.toString(), '}');
     }
 
     //Helper method which executes a deep copy of a 2D array. (dest,src)
@@ -449,6 +405,30 @@ public class AES {
             sb.append(Integer.toHexString(r.nextInt()));
         }
         return sb.toString().trim().toUpperCase();
+    }
+
+    // Adding padding zeroes
+    private String addPadding(String str, int blockSize){
+        int len = str.length();
+        StringBuilder sb = new StringBuilder();
+        if (len % blockSize != 0) {
+            for (int i = 0; i < blockSize - (len % blockSize); i++) {
+                sb.append('0');
+            }
+        }
+        return str += sb.toString();
+    }
+
+    // Remove padding zeroes
+    private String removePadding(String str, char symbol){
+        str = new String(Util.hexToBytes(str));
+        for(int i = str.length()-1; i>0; i--){
+            if (str.charAt(i) == symbol){
+                str = str.substring(0, i+1);
+                break;
+            }
+        }
+        return str;
     }
 
 }
