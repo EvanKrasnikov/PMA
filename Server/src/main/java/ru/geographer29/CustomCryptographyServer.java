@@ -30,18 +30,21 @@ public class CustomCryptographyServer extends AbstractServer {
                 json = (String)in.readObject();
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
-                logger.error("Unable to receive object");
+                //logger.error("Unable to receive object");
             }
+
+            logger.debug("Receiving encrypted message json = " + json);
 
             response = gson.fromJson(json, Response.class);
             if (response.getType() == Type.ENCRYPTED) {
-                response = gson.fromJson(json, Response.class);
-                logger.debug("Received json = " + json);
-                byte[] decoded = Base64.getDecoder().decode(response.getContent());
-                String decrypted = aes.encrypt(new String(decoded), iv, secretKey);
-                logger.debug("Decrypted json = " + decrypted);
+                //response = gson.fromJson(response.getContent(), Response.class);
+                String decoded = new String(Base64.getDecoder().decode(response.getContent()));
+                String decrypted = aes.decrypt(decoded, iv, secretKey);
+                logger.debug("Receiving encoded message = " + response.getContent());
+                logger.debug("Receiving encrypted message = " + decoded);
+                logger.debug("Receiving original message json = " + decrypted);
 
-                message = gson.fromJson(decrypted, Message.class);
+                //message = gson.fromJson(decrypted, Message.class);
                 if (message.getBody().equals("/quit")) {
                     break;
                 }
@@ -60,14 +63,14 @@ public class CustomCryptographyServer extends AbstractServer {
                 String encrypted = aes.encrypt(json, iv, secretKey);
                 String encoded = Base64.getEncoder().encodeToString(encrypted.getBytes());
 
-                response = createEncryptedMessageResponse(encoded);
+                response = createEncryptedResponse(encoded);
                 json = gson.toJson(response);
 
                 try {
                     out.writeObject(json);
                 } catch (IOException e) {
                     e.printStackTrace();
-                    logger.error("Unable to send message");
+                    //logger.error("Unable to send message");
                 }
             }
         }
@@ -115,7 +118,7 @@ public class CustomCryptographyServer extends AbstractServer {
             json = gson.toJson(createSecretKeyResponse(encodedSecretKey));
 
             for(;;) {
-                logger.debug("Sending encoded secret key " + json);
+                logger.debug("Sending secret key = " + secretKey);
                 out.writeObject(json);
                 json = (String)in.readObject();
                 response = gson.fromJson(json, Response.class);

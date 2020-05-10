@@ -1,6 +1,7 @@
 package ru.geographer29.cryptography;
 
-import java.util.Random;
+import ru.geographer29.util.Util;
+import java.security.SecureRandom;
 
 import static ru.geographer29.cryptography.LookupTables.*;
 
@@ -67,13 +68,38 @@ public class AES {
     public String encrypt(String line, String iv, String key){
         String result;
 
+
+        System.out.println("Before = " + line);
+        line = Util.bytesToHex(line.getBytes());
+        System.out.println("After = " + line);
+        int len = line.length();
+
+        if (len % 32 != 0) {
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < 32 - (len % 32); i++) {
+                sb.append('0');
+            }
+
+            line += sb.toString();
+            System.out.println("Msg len = " + len);
+            System.out.println("Add len = " + (32 - (len % 32)));
+            System.out.println("Combined = " + line);
+            System.out.println("Msg len = " + line.length());
+        }
+
         if (line.length() > 32){
             StringBuilder sb = new StringBuilder();
             int begin = 0;
             int end = 32;
 
             while (end <= line.length()){
+                if (end > line.length()){
+                    end = line.length();
+                }
                 String nextChunk = line.substring(begin, end);
+                System.out.println("Chunk = " + nextChunk);
+                System.out.println("Chunk len = " + end);
                 String encrypted = encrypt16Bytes(nextChunk, iv, key);
                 sb.append(encrypted);
                 begin += 32;
@@ -84,6 +110,7 @@ public class AES {
         } else {
             result = encrypt16Bytes(line, iv, key);
         }
+        System.out.println(result);
         return result;
     }
 
@@ -154,7 +181,7 @@ public class AES {
         } else {
             result = encrypt16Bytes(line, iv, key);
         }
-        return result;
+        return new String(Util.hexToBytes(result));
     }
 
     //Helper method which executes a deep copy of a 2D array. (dest,src)
@@ -407,7 +434,7 @@ public class AES {
     // default - 128 bits
     public static String generateSecretKey(int keyLength) {
         keyLength /= 4;
-        Random r = new Random();
+        SecureRandom r = new SecureRandom();
         StringBuilder sb = new StringBuilder();
         while(sb.length() < keyLength){
             sb.append(Integer.toHexString(r.nextInt()));

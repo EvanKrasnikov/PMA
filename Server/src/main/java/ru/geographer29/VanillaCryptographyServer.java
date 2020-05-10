@@ -8,9 +8,7 @@ import ru.geographer29.responses.Type;
 
 import javax.crypto.*;
 import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
@@ -20,6 +18,9 @@ import static ru.geographer29.responses.ResponseFactory.*;
 public class VanillaCryptographyServer extends AbstractServer {
 
     private final static Logger logger = Logger.getLogger(VanillaCryptographyServer.class);
+    private SecretKey secretKey;
+    private PrivateKey privateKey;
+    private PublicKey publicKey;
 
     void mainLoop() {
         logger.debug("Starting main loop");
@@ -57,7 +58,7 @@ public class VanillaCryptographyServer extends AbstractServer {
                 logger.debug("Sending message = " + json);
                 msgSend = Cryptography.encryptAndEncode(json);
 
-                response = createEncryptedMessageResponse(msgSend);
+                response = createEncryptedResponse(msgSend);
                 json = gson.toJson(response);
 
                 try {

@@ -30,25 +30,27 @@ public class CustomCryptographyClient extends AbstractClient {
         for(;;) {
             System.out.println("Enter a message: ");
             msgSend = scanner.nextLine();
-            logger.debug("Original message = " + msgSend);
+
             message = new Message.Builder()
                     .setBody(msgSend)
                     .setSource(IP)
                     .build();
             json = gson.toJson(message);
             json = gson.toJson(createMessageResponse(json));
-            logger.debug("Original json = " + json);
+            logger.debug("Sending original json = " + json);
+
             String encrypted = aes.encrypt(json, iv, secretKey);
             String encoded = Base64.getEncoder().encodeToString(encrypted.getBytes());
-            logger.debug("Encoded message = " + encrypted);
-            json = gson.toJson(createEncryptedMessageResponse(encoded));
-            logger.debug("Encrypted message json = " + json);
+            json = gson.toJson(createEncryptedResponse(encoded));
+            logger.debug("Sending encrypted message = " + encrypted);
+            logger.debug("Sending encoded message = " + encoded);
+            logger.debug("Sending encrypted message json = " + json);
 
             try {
                 out.writeObject(json);
             } catch (IOException e) {
                 e.printStackTrace();
-                logger.error("Unable to write object");
+                //logger.error("Unable to write object");
             }
 
             if (msgSend.equals("/quit"))
@@ -58,7 +60,7 @@ public class CustomCryptographyClient extends AbstractClient {
                 json = (String)in.readObject();
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
-                logger.error("Unable to receive object");
+                //logger.error("Unable to receive object");
             }
 
             logger.debug("Received json = " + json);
@@ -66,7 +68,7 @@ public class CustomCryptographyClient extends AbstractClient {
             response = gson.fromJson(json, Response.class);
             if (response.getType() == Type.ENCRYPTED){
                 byte[] decoded = Base64.getDecoder().decode(response.getContent());
-                String decrypted = aes.encrypt(new String(decoded), iv, secretKey);
+                String decrypted = aes.decrypt(new String(decoded), iv, secretKey);
                 logger.debug("Decrypted json = " + json);
                 message = gson.fromJson(decrypted, Message.class);
                 logger.debug("Message = " + message.getBody() );
@@ -126,7 +128,7 @@ public class CustomCryptographyClient extends AbstractClient {
                     byte[] decryptedSecretKey = rsa.decrypt(decodedSecretKey, privateKey);
                     secretKey = new String(decryptedSecretKey);
 
-                    logger.debug("Received json = " + json);
+                    logger.debug("Received secret key = " + secretKey);
                     json = gson.toJson(createSecretKeyAcceptResponse());
                     out.writeObject(json);
 

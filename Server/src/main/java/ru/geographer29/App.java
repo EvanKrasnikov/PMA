@@ -13,6 +13,7 @@ public class App {
     public static void main( String[] args ) {
 
         AbstractServer server = new CustomCryptographyServer();
+        server.run();
 
     }
 

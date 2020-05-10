@@ -6,13 +6,10 @@ import org.apache.log4j.Logger;
 import ru.geographer29.responses.Message;
 import ru.geographer29.responses.Response;
 
-import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 
 public abstract class AbstractClient {
     private final static Logger logger = Logger.getLogger(AbstractClient.class);
@@ -24,8 +21,6 @@ public abstract class AbstractClient {
     protected ObjectOutputStream out;
 
     protected final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm").create();
-
-
 
     protected String msgSend = "";
     protected String json = "";

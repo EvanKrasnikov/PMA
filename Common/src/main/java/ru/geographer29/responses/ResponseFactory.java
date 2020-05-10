@@ -35,7 +35,7 @@ public class ResponseFactory {
                 .build();
     }
 
-    public static Response createEncryptedMessageResponse(String content){
+    public static Response createEncryptedResponse(String content){
         return new Response.Builder()
                 .setType(Type.ENCRYPTED)
                 .setContent(content)
