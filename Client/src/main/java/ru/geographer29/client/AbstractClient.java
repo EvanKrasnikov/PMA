@@ -37,9 +37,9 @@ public abstract class AbstractClient extends Thread {
             out.flush();
             in = new ObjectInputStream(socket.getInputStream());
 
-            generateKeys();
             initCryptography();
-            mainLoop();
+            outputThread.start();
+
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -56,8 +56,11 @@ public abstract class AbstractClient extends Thread {
         }
     }
 
-    abstract void generateKeys();
+    protected Thread inputThread = new Thread(this::inputLoop);
+    protected Thread outputThread = new Thread(this::outputLoop);
+
     abstract void initCryptography();
-    abstract void mainLoop();
+    abstract void inputLoop();
+    abstract void outputLoop();
 
 }

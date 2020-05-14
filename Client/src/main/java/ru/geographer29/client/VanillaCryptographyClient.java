@@ -165,4 +165,13 @@ public class VanillaCryptographyClient extends AbstractClient {
         logger.debug("Cryptography initialized");
     }
 
+    @Override
+    void inputLoop() {
+
+    }
+
+    @Override
+    void outputLoop() {
+
+    }
 }
