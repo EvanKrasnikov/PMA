@@ -1,4 +1,4 @@
-package ru.geographer29;
+package ru.geographer29.server;
 
 import org.apache.log4j.Logger;
 import ru.geographer29.cryptography.Cryptography;
@@ -8,6 +8,7 @@ import ru.geographer29.responses.Type;
 
 import javax.crypto.*;
 import java.io.IOException;
+import java.net.Socket;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
@@ -21,6 +22,10 @@ public class VanillaCryptographyServer extends AbstractServer {
     private SecretKey secretKey;
     private PrivateKey privateKey;
     private PublicKey publicKey;
+
+    public VanillaCryptographyServer(Socket socket) {
+        super(socket);
+    }
 
     void mainLoop() {
         logger.debug("Starting main loop");

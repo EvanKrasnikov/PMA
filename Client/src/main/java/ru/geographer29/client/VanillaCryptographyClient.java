@@ -1,4 +1,4 @@
-package ru.geographer29;
+package ru.geographer29.client;
 
 import org.apache.log4j.Logger;
 import ru.geographer29.cryptography.Cryptography;

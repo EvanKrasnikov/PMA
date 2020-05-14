@@ -1,4 +1,4 @@
-package ru.geographer29;
+package ru.geographer29.server;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -13,7 +13,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.TimeUnit;
 
-public abstract class AbstractServer {
+public abstract class AbstractServer implements Runnable {
 
     private final static Logger logger = Logger.getLogger(AbstractServer.class);
     protected final static int PORT = 8080;
@@ -32,13 +32,13 @@ public abstract class AbstractServer {
 
     protected Response response;
 
+    public AbstractServer(Socket socket) {
+        this.socket = socket;
+    }
+
+    @Override
     public void run() {
         try {
-            serverSocket = new ServerSocket(PORT);
-
-            logger.info("Waiting for connection ");
-            socket = serverSocket.accept();
-
             out = new ObjectOutputStream(socket.getOutputStream());
             out.flush();
             in = new ObjectInputStream(socket.getInputStream());

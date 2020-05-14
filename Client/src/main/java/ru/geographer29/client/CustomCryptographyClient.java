@@ -1,4 +1,4 @@
-package ru.geographer29;
+package ru.geographer29.client;
 
 import org.apache.log4j.Logger;
 import ru.geographer29.cryptography.AES;
@@ -20,6 +20,12 @@ public class CustomCryptographyClient extends AbstractClient {
     private String secretKey;
     private String publicKey;
     private String privateKey;
+
+    private String name;
+
+    public CustomCryptographyClient(String name) {
+        this.name = name;
+    }
 
     void mainLoop() {
         Scanner scanner = new Scanner(System.in);

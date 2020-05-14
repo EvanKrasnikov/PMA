@@ -1,4 +1,4 @@
-package ru.geographer29;
+package ru.geographer29.client;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -11,7 +11,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-public abstract class AbstractClient {
+public abstract class AbstractClient extends Thread {
     private final static Logger logger = Logger.getLogger(AbstractClient.class);
     protected final static String IP = "localhost";
     private final static int PORT = 8080;
@@ -27,6 +27,7 @@ public abstract class AbstractClient {
     protected Message message = null;
     protected Response response;
 
+    @Override
     public void run() {
         try {
             socket = new Socket(IP, PORT);

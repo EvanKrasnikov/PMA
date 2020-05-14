@@ -1,4 +1,4 @@
-package ru.geographer29;
+package ru.geographer29.server;
 
 import org.apache.log4j.Logger;
 import ru.geographer29.cryptography.AES;
@@ -8,7 +8,9 @@ import ru.geographer29.responses.Response;
 import ru.geographer29.responses.Type;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.Base64;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static ru.geographer29.responses.ResponseFactory.*;
 
@@ -16,9 +18,14 @@ import static ru.geographer29.responses.ResponseFactory.*;
 public class CustomCryptographyServer extends AbstractServer {
 
     private final static Logger logger = Logger.getLogger(CustomCryptographyServer.class);
+    private static ConcurrentHashMap<String, CustomCryptographyServer> clients = new ConcurrentHashMap<>();
     private String secretKey;
     private String privateKey;
     private String publicKey;
+
+    public CustomCryptographyServer(Socket socket) {
+        super(socket);
+    }
 
     void mainLoop() {
         AES aes = new AES(AES.Mode.ECB);
