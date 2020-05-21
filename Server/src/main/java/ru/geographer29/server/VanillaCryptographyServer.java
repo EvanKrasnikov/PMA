@@ -63,7 +63,7 @@ public class VanillaCryptographyServer extends AbstractServer {
                 logger.debug("Sending message = " + json);
                 msgSend = Cryptography.encryptAndEncode(json);
 
-                response = createEncryptedResponse(msgSend);
+                response = createEncryptedResponse(msgSend, "");
                 json = gson.toJson(response);
 
                 try {

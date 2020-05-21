@@ -39,7 +39,7 @@ public class VanillaCryptographyClient extends AbstractClient {
             logger.debug("Original json = " + json);
             json = Cryptography.encryptAndEncode(json);
             logger.debug("Encrypted message = " + json);
-            json = gson.toJson(createEncryptedResponse(json));
+            json = gson.toJson(createEncryptedResponse(json, ""));
             logger.debug("Encrypted message json = " + json);
 
             try {
