@@ -35,10 +35,11 @@ public class ResponseFactory {
                 .build();
     }
 
-    public static Response createEncryptedResponse(String content){
+    public static Response createEncryptedResponse(String content, String hmac){
         return new Response.Builder()
                 .setType(Type.ENCRYPTED)
                 .setContent(content)
+                .setHmac(hmac)
                 .build();
     }
 

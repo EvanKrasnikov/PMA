@@ -2,6 +2,7 @@ package ru.geographer29.client;
 
 import org.apache.log4j.Logger;
 import ru.geographer29.cryptography.AES;
+import ru.geographer29.cryptography.MessageDigest;
 import ru.geographer29.cryptography.KeyPair;
 import ru.geographer29.cryptography.RSA;
 import ru.geographer29.responses.Message;
@@ -29,6 +30,7 @@ public class CustomCryptographyClient extends AbstractClient {
 
     void mainLoop() {
         Scanner scanner = new Scanner(System.in);
+        MessageDigest md = new MessageDigest(secretKey);
         AES aes = new AES(AES.Mode.ECB);
         String iv = "0000000000000000";
         logger.debug("Starting main loop");
@@ -46,7 +48,8 @@ public class CustomCryptographyClient extends AbstractClient {
 
             String encrypted = aes.encrypt(json, iv, secretKey);
             String encoded = Base64.getEncoder().encodeToString(encrypted.getBytes());
-            json = gson.toJson(createEncryptedResponse(encoded));
+            String hmac = md.computeHmac(encoded);
+            json = gson.toJson(createEncryptedResponse(encoded, hmac));
 
             logger.debug("Sending original json = " + json);
             logger.debug("Sending encrypted message = " + encrypted);
@@ -72,6 +75,16 @@ public class CustomCryptographyClient extends AbstractClient {
 
             response = gson.fromJson(json, Response.class);
             if (response.getType() == Type.ENCRYPTED){
+
+                String expectedHmac = response.getHmac();
+                String actualHmac = md.computeHmac(response.getContent());
+                if (!expectedHmac.equals(actualHmac)) {
+                    logger.debug("Message is corrupted. Hmac is wrong.");
+                    continue;
+                }
+                logger.debug("Expected hmac = " + expectedHmac);
+                logger.debug("Actual hmac = " + actualHmac);
+
                 String decoded = new String(Base64.getDecoder().decode(response.getContent()));
                 String decrypted = aes.decrypt(decoded, iv, secretKey);
                 message = gson.fromJson(decrypted, Message.class);

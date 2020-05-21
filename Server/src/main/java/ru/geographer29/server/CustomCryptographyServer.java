@@ -2,6 +2,7 @@ package ru.geographer29.server;
 
 import org.apache.log4j.Logger;
 import ru.geographer29.cryptography.AES;
+import ru.geographer29.cryptography.MessageDigest;
 import ru.geographer29.cryptography.RSA;
 import ru.geographer29.responses.Message;
 import ru.geographer29.responses.Response;
@@ -28,6 +29,7 @@ public class CustomCryptographyServer extends AbstractServer {
     }
 
     void mainLoop() {
+        MessageDigest md = new MessageDigest(secretKey);
         AES aes = new AES(AES.Mode.ECB);
         String iv = "0000000000000000";
         logger.debug("Starting main loop");
@@ -42,6 +44,16 @@ public class CustomCryptographyServer extends AbstractServer {
 
             response = gson.fromJson(json, Response.class);
             if (response.getType() == Type.ENCRYPTED) {
+
+                String expectedHmac = response.getHmac();
+                String actualHmac = md.computeHmac(response.getContent());
+                if (!expectedHmac.equals(actualHmac)) {
+                    logger.debug("Message is corrupted. Hmac is wrong.");
+                    continue;
+                }
+                logger.debug("Expected hmac = " + expectedHmac);
+                logger.debug("Actual hmac = " + actualHmac);
+
                 String decoded = new String(Base64.getDecoder().decode(response.getContent()));
                 String decrypted = aes.decrypt(decoded, iv, secretKey);
 
@@ -71,7 +83,8 @@ public class CustomCryptographyServer extends AbstractServer {
 
                     String encrypted = aes.encrypt(json, iv, secretKey);
                     String encoded = Base64.getEncoder().encodeToString(encrypted.getBytes());
-                    response = createEncryptedResponse(encoded);
+                    String hmac = md.computeHmac(encoded);
+                    response = createEncryptedResponse(encoded, hmac);
 
                     logger.debug("Sending original json = " + json);
                     logger.debug("Sending encrypted message = " + encrypted);

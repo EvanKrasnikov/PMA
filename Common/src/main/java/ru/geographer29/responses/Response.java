@@ -4,10 +4,12 @@ public class Response {
 
     private final Type type;
     private final String content;
+    private final String hmac;
 
-    private Response(Type type, String content) {
+    private Response(Type type, String content, String hmac) {
         this.type = type;
         this.content = content;
+        this.hmac = hmac;
     }
 
     public Type getType() {
@@ -18,10 +20,15 @@ public class Response {
         return content;
     }
 
+    public String getHmac() {
+        return hmac;
+    }
+
     static class Builder{
 
         private Type type;
         private String content;
+        private String hmac;
 
         public Builder setType(Type type){
             this.type = type;
@@ -33,8 +40,13 @@ public class Response {
             return this;
         }
 
+        public Builder setHmac(String hmac){
+            this.hmac = hmac;
+            return this;
+        }
+
         public Response build(){
-            return new Response(type, content);
+            return new Response(type, content, hmac);
         }
 
     }
