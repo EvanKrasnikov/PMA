@@ -157,13 +157,4 @@ public class VanillaCryptographyServer extends AbstractServer {
         }
     }
 
-    @Override
-    void inputLoop() {
-
-    }
-
-    @Override
-    void outputLoop() {
-
-    }
 }

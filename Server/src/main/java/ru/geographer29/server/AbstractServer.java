@@ -9,15 +9,18 @@ import ru.geographer29.responses.Response;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractServer implements Runnable {
 
     private final static Logger logger = Logger.getLogger(AbstractServer.class);
-    //protected final static int PORT = 8080;
+    protected final static int PORT = 8080;
 
     protected Socket socket;
+    protected ServerSocket serverSocket;
+
     protected ObjectOutputStream out;
     protected ObjectInputStream in;
 
@@ -42,11 +45,9 @@ public abstract class AbstractServer implements Runnable {
 
             logger.info("Client connected " + socket.getInetAddress().getHostAddress());
 
+            generateKeys();
             initCryptography();
-            inputThread.setName("Input");
-            inputThread.start();
-            outputThread.setName("Output");
-            outputThread.start();
+            mainLoop();
 
             logger.info("Client disconnected " + socket.getInetAddress().getHostAddress());
 
@@ -55,11 +56,12 @@ public abstract class AbstractServer implements Runnable {
             e.printStackTrace();
         } catch (InterruptedException e){
             e.printStackTrace();
-        } finally {
+        }finally {
             try {
                 in.close();
                 out.close();
                 socket.close();
+                serverSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
                 logger.error("Unable to close streams and sockets");
@@ -67,11 +69,8 @@ public abstract class AbstractServer implements Runnable {
         }
     }
 
-    protected Thread inputThread = new Thread(this::inputLoop);
-    protected Thread outputThread = new Thread(this::outputLoop);
-
+    abstract void generateKeys();
     abstract void initCryptography();
-    abstract void inputLoop();
-    abstract void outputLoop();
+    abstract void mainLoop();
 
 }
