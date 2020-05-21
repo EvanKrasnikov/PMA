@@ -45,7 +45,6 @@ public abstract class AbstractServer implements Runnable {
 
             logger.info("Client connected " + socket.getInetAddress().getHostAddress());
 
-            generateKeys();
             initCryptography();
             mainLoop();
 
@@ -69,7 +68,6 @@ public abstract class AbstractServer implements Runnable {
         }
     }
 
-    abstract void generateKeys();
     abstract void initCryptography();
     abstract void mainLoop();
 

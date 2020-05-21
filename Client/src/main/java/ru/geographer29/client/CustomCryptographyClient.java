@@ -56,22 +56,12 @@ public class CustomCryptographyClient extends AbstractClient {
             logger.debug("Sending encoded message = " + encoded);
             logger.debug("Sending encrypted message json = " + json);
 
-            try {
-                out.writeObject(json);
-            } catch (IOException e) {
-                e.printStackTrace();
-                //logger.error("Unable to write object");
-            }
+            trySend(json);
 
             if (msgSend.equals("/quit"))
                 break;
 
-            try {
-                json = (String)in.readObject();
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-                //logger.error("Unable to receive object");
-            }
+            json = tryReceive();
 
             response = gson.fromJson(json, Response.class);
             if (response.getType() == Type.ENCRYPTED){
@@ -108,69 +98,70 @@ public class CustomCryptographyClient extends AbstractClient {
         logger.info("Client disconnected from server " + socket.getInetAddress().getHostAddress());
     }
 
-    /**
-     * Generating public and private key pair
-     */
-    void generateKeys() {
+    // Initialize cryptography using protocol
+    void initCryptography() {
+        // Generating public and private key pair
         KeyPair keyPair = RSA.generateKeyPair(1024);
-        if (keyPair == null) {
-            logger.error("Public and private keys are not generated");
-        }
         privateKey = keyPair.getPrivateKey();
         publicKey = keyPair.getPublicKey();
-    }
 
-    /**
-     * Initialize cryptography using protocol
-     */
-    void initCryptography() {
-        try {
-            /**
-             * Sending public key to the server
-             */
-            String encoded = Base64.getEncoder().encodeToString(publicKey.getBytes());
+        // Sending public key to the server
+        String encoded = Base64.getEncoder().encodeToString(publicKey.getBytes());
+        for(;;) {
+            json = gson.toJson(createPublicKeyResponse(encoded));
+            trySend(json);
 
-            for(;;) {
-                json = gson.toJson(createPublicKeyResponse(encoded));
-                out.writeObject(json);
-                json = (String)in.readObject();
-                response = gson.fromJson(json, Response.class);
-                if (response.getType() == Type.PUBLIC_KEY_ACCEPT) {
-                    logger.debug("Public key was accepted by server");
-                    break;
-                }
+            json = tryReceive();
+            response = gson.fromJson(json, Response.class);
+            if (response.getType() == Type.PUBLIC_KEY_ACCEPT) {
+                logger.debug("Public key was accepted by server");
+                break;
             }
+        }
 
-            /**
-             * Receiving and decrypting of secret key
-             */
-            for (;;) {
-                json = (String) in.readObject();
-                response = gson.fromJson(json, Response.class);
-                if (response.getType() == Type.SECRET_KEY) {
-                    RSA rsa = new RSA();
-                    String encodedSecretKey = response.getContent();
-                    byte[] decodedSecretKey = Base64.getDecoder().decode(encodedSecretKey);
-                    byte[] decryptedSecretKey = rsa.decrypt(decodedSecretKey, privateKey);
-                    secretKey = new String(decryptedSecretKey);
+        // Receiving and decrypting of secret key
+        for (;;) {
+            json = tryReceive();
+            response = gson.fromJson(json, Response.class);
+            if (response.getType() == Type.SECRET_KEY) {
+                RSA rsa = new RSA();
+                String encodedSecretKey = response.getContent();
+                byte[] decodedSecretKey = Base64.getDecoder().decode(encodedSecretKey);
+                byte[] decryptedSecretKey = rsa.decrypt(decodedSecretKey, privateKey);
+                secretKey = new String(decryptedSecretKey);
 
-                    logger.debug("Received secret key = " + secretKey);
-                    json = gson.toJson(createSecretKeyAcceptResponse());
-                    out.writeObject(json);
+                logger.debug("Received secret key = " + secretKey);
+                json = gson.toJson(createSecretKeyAcceptResponse());
+                trySend(json);
 
-                    logger.debug("Secret key accepted");
-                    break;
-                }
+                logger.debug("Secret key accepted");
+                break;
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-            logger.error("Unable to send or receive message");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            logger.error("Format has not recognized");
         }
 
         logger.debug("Cryptography initialized");
+    }
+
+    private String tryReceive(){
+        try {
+            return (String)in.readObject();
+        } catch (IOException e) {
+            e.printStackTrace();
+            logger.error("Unable to receive message");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            logger.error("Can not cast String");
+        }
+        return "";
+    }
+
+    private void trySend(String json){
+        try {
+            out.writeObject(json);
+        } catch (IOException e) {
+            e.printStackTrace();
+            logger.error("Unable to send message");
+        }
     }
 
 }
