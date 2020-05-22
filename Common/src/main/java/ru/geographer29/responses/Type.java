@@ -7,6 +7,7 @@ public enum Type {
     PUBLIC_KEY_ACCEPT,
     SECRET_KEY,
     SECRET_KEY_ACCEPT,
-    ENCRYPTED
+    ENCRYPTED,
+    USER_DATA
 
 }

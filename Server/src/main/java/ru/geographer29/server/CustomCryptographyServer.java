@@ -4,6 +4,7 @@ import org.apache.log4j.Logger;
 import ru.geographer29.cryptography.AES;
 import ru.geographer29.cryptography.MessageDigest;
 import ru.geographer29.cryptography.RSA;
+import ru.geographer29.entities.UserData;
 import ru.geographer29.responses.Message;
 import ru.geographer29.responses.Response;
 import ru.geographer29.responses.Type;
@@ -23,31 +24,28 @@ public class CustomCryptographyServer extends AbstractServer {
     private String secretKey;
     private String privateKey;
     private String publicKey;
+    private MessageDigest md;
+    private AES aes;
+    private String iv = "0000000000000000";
 
     public CustomCryptographyServer(Socket socket) {
         super(socket);
     }
 
     void mainLoop() {
-        MessageDigest md = new MessageDigest(secretKey);
-        AES aes = new AES(AES.Mode.ECB);
-        String iv = "0000000000000000";
+        md = new MessageDigest(secretKey);
+        aes = new AES(AES.Mode.ECB);
+
         logger.debug("Starting main loop");
 
         for(;;) {
             json = tryReceive();
+            logger.debug("Received json = " + json);
 
             response = gson.fromJson(json, Response.class);
             if (response.getType() == Type.ENCRYPTED) {
 
-                String expectedHmac = response.getHmac();
-                String actualHmac = md.computeHmac(response.getContent());
-                if (!expectedHmac.equals(actualHmac)) {
-                    logger.debug("Message is corrupted. Hmac is wrong.");
-                    continue;
-                }
-                logger.debug("Expected hmac = " + expectedHmac);
-                logger.debug("Actual hmac = " + actualHmac);
+                md.checkDigest(response.getHmac(), response.getContent());
 
                 String decoded = new String(Base64.getDecoder().decode(response.getContent()));
                 String decrypted = aes.decrypt(decoded, iv, secretKey);
@@ -62,32 +60,28 @@ public class CustomCryptographyServer extends AbstractServer {
                     message = gson.fromJson(response.getContent(), Message.class);
 
                     if (message.getBody().equals("/quit")) {
+                        clients.remove(message.getSource());
                         break;
                     }
 
-                    logger.info(message.getSource() + "> " + message.getBody());
-                    System.out.println(message.getSource() + "> " + message.getBody());
+                    String source = message.getSource();
+                    String target = message.getTarget();
+                    CustomCryptographyServer client = clients.get(target);
 
-                    msgSend = "Echo + " + message.getBody();
                     message = new Message.Builder()
-                            .setBody(msgSend)
-                            .setSource("Server")
+                            .setBody(message.getBody())
+                            .setSource(source)
+                            .setTarget(target)
                             .build();
-                    json = gson.toJson(message);
-                    json = gson.toJson(createMessageResponse(json));
+                    send(message);
 
-                    String encrypted = aes.encrypt(json, iv, secretKey);
-                    String encoded = Base64.getEncoder().encodeToString(encrypted.getBytes());
-                    String hmac = md.computeHmac(encoded);
-                    response = createEncryptedResponse(encoded, hmac);
-
-                    logger.debug("Sending original json = " + json);
-                    logger.debug("Sending encrypted message = " + encrypted);
-                    logger.debug("Sending encoded message = " + encoded);
-                    logger.debug("Sending encrypted message json = " + json);
-
-                    json = gson.toJson(response);
-                    trySend(json);
+                    logger.debug("Sending message to client " + client);
+                    client.send(message);
+                }
+                if (response.getType() == Type.USER_DATA){
+                    UserData userData = gson.fromJson(response.getContent(), UserData.class);
+                    clients.putIfAbsent(userData.getUserName(), this);
+                    logger.debug("Client added to HashMap ");
                 }
             }
         }
@@ -154,6 +148,24 @@ public class CustomCryptographyServer extends AbstractServer {
             e.printStackTrace();
             logger.error("Unable to send message");
         }
+    }
+
+    public void send(Message message) {
+        json = gson.toJson(message);
+        json = gson.toJson(createMessageResponse(json));
+
+        String encrypted = aes.encrypt(json, iv, secretKey);
+        String encoded = Base64.getEncoder().encodeToString(encrypted.getBytes());
+        String hmac = md.computeHmac(encoded);
+        response = createEncryptedResponse(encoded, hmac);
+
+        logger.debug("Sending original json = " + json);
+        logger.debug("Sending encrypted message = " + encrypted);
+        logger.debug("Sending encoded message = " + encoded);
+        logger.debug("Sending encrypted message json = " + json);
+
+        json = gson.toJson(response);
+        trySend(json);
     }
 
 }

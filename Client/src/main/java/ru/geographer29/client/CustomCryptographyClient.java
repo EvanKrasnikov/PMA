@@ -5,6 +5,7 @@ import ru.geographer29.cryptography.AES;
 import ru.geographer29.cryptography.MessageDigest;
 import ru.geographer29.cryptography.KeyPair;
 import ru.geographer29.cryptography.RSA;
+import ru.geographer29.entities.UserData;
 import ru.geographer29.responses.Message;
 import ru.geographer29.responses.Response;
 import ru.geographer29.responses.Type;
@@ -22,26 +23,38 @@ public class CustomCryptographyClient extends AbstractClient {
     private String publicKey;
     private String privateKey;
 
-    private String name;
+    private MessageDigest md;
+    private AES aes;
+    private String iv = "0000000000000000";
 
-    public CustomCryptographyClient(String name) {
+    private String name;
+    private String target;
+
+    public CustomCryptographyClient(String name, String target) {
         this.name = name;
+        this.target = target;
     }
 
     void mainLoop() {
         Scanner scanner = new Scanner(System.in);
-        MessageDigest md = new MessageDigest(secretKey);
-        AES aes = new AES(AES.Mode.ECB);
-        String iv = "0000000000000000";
+        md = new MessageDigest(secretKey);
+        aes = new AES(AES.Mode.ECB);
+
+        logger.debug("Sending user data" );
+        sendUserData();
+
         logger.debug("Starting main loop");
 
         for(;;) {
             System.out.println("Enter a message: ");
             msgSend = scanner.nextLine();
 
+            System.out.println("Me > " + msgSend);
+
             message = new Message.Builder()
                     .setBody(msgSend)
-                    .setSource(IP)
+                    .setSource(name)
+                    .setTarget(target)
                     .build();
             json = gson.toJson(message);
             json = gson.toJson(createMessageResponse(json));
@@ -62,18 +75,14 @@ public class CustomCryptographyClient extends AbstractClient {
                 break;
 
             json = tryReceive();
+            if (json.equals(""))
+                continue;
+            logger.debug("Received json = " + json);
 
             response = gson.fromJson(json, Response.class);
             if (response.getType() == Type.ENCRYPTED){
 
-                String expectedHmac = response.getHmac();
-                String actualHmac = md.computeHmac(response.getContent());
-                if (!expectedHmac.equals(actualHmac)) {
-                    logger.debug("Message is corrupted. Hmac is wrong.");
-                    continue;
-                }
-                logger.debug("Expected hmac = " + expectedHmac);
-                logger.debug("Actual hmac = " + actualHmac);
+                md.checkDigest(response.getHmac(), response.getContent());
 
                 String decoded = new String(Base64.getDecoder().decode(response.getContent()));
                 String decrypted = aes.decrypt(decoded, iv, secretKey);
@@ -143,8 +152,10 @@ public class CustomCryptographyClient extends AbstractClient {
     }
 
     private String tryReceive(){
+        String result = "";
         try {
-            return (String)in.readObject();
+            result = (String)in.readObject();
+            return result;
         } catch (IOException e) {
             e.printStackTrace();
             logger.error("Unable to receive message");
@@ -152,7 +163,7 @@ public class CustomCryptographyClient extends AbstractClient {
             e.printStackTrace();
             logger.error("Can not cast String");
         }
-        return "";
+        return result;
     }
 
     private void trySend(String json){
@@ -162,6 +173,18 @@ public class CustomCryptographyClient extends AbstractClient {
             e.printStackTrace();
             logger.error("Unable to send message");
         }
+    }
+
+    private void sendUserData(){
+        UserData userData = new UserData(name);
+        json = gson.toJson(userData);
+        json = gson.toJson(createUserDataResponse(json));
+
+        String encrypted = aes.encrypt(json, iv, secretKey);
+        String encoded = Base64.getEncoder().encodeToString(encrypted.getBytes());
+        String hmac = md.computeHmac(encoded);
+        json = gson.toJson(createEncryptedResponse(encoded, hmac));
+        trySend(json);
     }
 
 }

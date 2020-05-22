@@ -1,5 +1,7 @@
 package ru.geographer29.responses;
 
+import ru.geographer29.entities.UserData;
+
 public class ResponseFactory {
 
     public static Response createMessageResponse(String content) {
@@ -40,6 +42,13 @@ public class ResponseFactory {
                 .setType(Type.ENCRYPTED)
                 .setContent(content)
                 .setHmac(hmac)
+                .build();
+    }
+
+    public static Response createUserDataResponse(String content) {
+        return new Response.Builder()
+                .setType(Type.USER_DATA)
+                .setContent(content)
                 .build();
     }
 

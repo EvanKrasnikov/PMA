@@ -19,7 +19,7 @@ public abstract class AbstractServer implements Runnable {
     protected final static int PORT = 8080;
 
     protected Socket socket;
-    protected ServerSocket serverSocket;
+    //protected ServerSocket serverSocket;
 
     protected ObjectOutputStream out;
     protected ObjectInputStream in;
@@ -60,7 +60,7 @@ public abstract class AbstractServer implements Runnable {
                 in.close();
                 out.close();
                 socket.close();
-                serverSocket.close();
+                //serverSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
                 logger.error("Unable to close streams and sockets");

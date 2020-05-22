@@ -14,7 +14,8 @@ public class ClientLauncher {
     public static void main(String[] args) {
 
         CustomCryptographyClient client = new CustomCryptographyClient(
-                "Timon"
+                "Timon",
+                "Pumba"
         );
 
         client.run();
