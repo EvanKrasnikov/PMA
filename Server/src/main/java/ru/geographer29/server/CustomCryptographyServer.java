@@ -47,6 +47,9 @@ public class CustomCryptographyServer extends AbstractServer {
 
                 md.checkDigest(response.getHmac(), response.getContent());
 
+                logger.debug("Expected hmac = " + response.getHmac());
+                logger.debug("Actual hmac = " + md.computeHmac(response.getContent()));
+
                 String decoded = new String(Base64.getDecoder().decode(response.getContent()));
                 String decrypted = aes.decrypt(decoded, iv, secretKey);
 
